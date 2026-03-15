@@ -1,0 +1,149 @@
+﻿@model SmartParkingSystem.Models.HistoryViewModel
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-white">📜 Lịch Sử & Doanh Thu</h2>
+        <div class="card bg-success text-white shadow">
+            <div class="card-body py-2 px-4">
+                <h4 class="m-0">💰 Tổng: @Model.TotalRevenue.ToString("N0") VNĐ</h4>
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-dark text-white border-secondary mb-4">
+        <div class="card-body">
+            <form asp-action="History" method="get" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label text-secondary">Từ ngày</label>
+                    <input type="date" name="fromDate" class="form-control bg-secondary text-white border-0"
+                           value="@Model.FromDate?.ToString("yyyy-MM-dd")">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label text-secondary">Đến ngày</label>
+                    <input type="date" name="toDate" class="form-control bg-secondary text-white border-0"
+                           value="@Model.ToDate?.ToString("yyyy-MM-dd")">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label text-secondary">Loại xe</label>
+                    <select name="vehicleType" class="form-select bg-secondary text-white border-0">
+                        <option value="All">-- Tất cả --</option>
+
+                        <!- Nếu selected là XeMay thì thêm chữ selected ->
+                        @if (Model.SelectedVehicleType == "XeMay")
+                        {
+                            <option value="XeMay" selected>🏍 Xe Máy</option>
+                        }
+                        else
+                        {
+                            <option value="XeMay">🏍 Xe Máy</option>
+                        }
+
+                        @if (Model.SelectedVehicleType == "OTo")
+                        {
+                            <option value="OTo" selected>🚗 Ô Tô</option>
+                        }
+                        else
+                        {
+                            <option value="OTo">🚗 Ô Tô</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary w-100 fw-bold">🔍 Lọc Dữ Liệu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between mb-3">
+        <a asp-action="Index" class="btn btn-outline-light">⬅ Quay lại Bãi Xe</a>
+
+        <div class="d-flex gap-2">
+            <a asp-action="ExportExcel" class="btn btn-success fw-bold shadow-sm">
+                📥 Xuất File Excel
+            </a>
+
+            <form asp-action="DeleteAllHistory" method="post"
+                  onsubmit="return confirm('CẢNH BÁO:\nBạn có chắc chắn muốn xóa TOÀN BỘ lịch sử không?\nHành động này sẽ reset tổng doanh thu về 0 và KHÔNG THỂ khôi phục!');">
+                <button type="submit" class="btn btn-danger fw-bold shadow-sm">
+                    Xóa Tất Cả
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-dark table-striped table-hover border-secondary">
+            <thead>
+                <tr class="text-secondary">
+                    <th class="text-center" style="width: 50px;">STT</th>
+                    <th>Biển Số</th>
+                    <th>Loại Xe</th>
+                    <th class="text-center">Vị Trí</th>
+                    <th>Vào Lúc</th>
+                    <th>Ra Lúc</th>
+                    <th class="text-end">Đã Thu</th>
+                    <th class="text-center">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    int stt = 1;
+                }
+
+                @foreach (var item in Model.Sessions)
+                {
+                    <tr>
+                        <td class="text-center fw-bold text-secondary">@(stt++)</td>
+
+                        <td class="fw-bold text-info">@item.LicensePlate</td>
+                        <td>
+                            @if (item.VehicleType == "XeMay")
+                            {
+                                <span class="badge shadow-sm" style="background-color: #0d6efd; color: white !important; font-size: 14px; font-weight: bold; padding: 6px 10px;">🏍 Xe Máy</span>
+                            }
+                            else if (item.VehicleType == "OTo")
+                            {
+                                <span class="badge shadow-sm" style="background-color: #ffc107; color: black !important; font-size: 14px; font-weight: bold; padding: 6px 10px;">🚗 Ô Tô</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary shadow-sm">⚡ @item.VehicleType</span>
+                            }
+                        </td>
+
+                        <td class="text-center fw-bold text-warning">
+                            @(string.IsNullOrEmpty(item.SpotName) ? "-" : item.SpotName)
+                        </td>
+
+                        <td>
+                            @item.CheckInTime.ToString("dddd, HH:mm:ss - dd/MM/yyyy", new System.Globalization.CultureInfo("vi-VN"))
+                        </td>
+                        <td>
+                            @item.CheckOutTime?.ToString("dddd, HH:mm:ss - dd/MM/yyyy", new System.Globalization.CultureInfo("vi-VN"))
+                        </td>
+                        <td class="text-success fw-bold text-end">
+                            @item.ParkingFee.ToString("N0") đ
+                        </td>
+
+                        <td class="text-center align-middle">
+                            <form asp-action="DeleteHistory" asp-route-id="@item.Id" method="post"
+                                  onsubmit="return confirm('Bạn có chắc chắn muốn xóa bản ghi này? Hành động này sẽ làm giảm Tổng doanh thu hiện tại.');">
+                                <button type="submit" class="btn btn-danger btn-sm shadow-sm" title="Xóa lịch sử">
+                                    🗑️ Xóa
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (!Model.Sessions.Any())
+    {
+        <div class="alert alert-secondary text-center">Không tìm thấy dữ liệu nào phù hợp.</div>
+    }
+</div>

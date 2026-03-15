@@ -1,0 +1,46 @@
+﻿@{
+    ViewData["Title"] = "Trang Chủ";
+}
+
+<div class="text-center mt-4 mb-5">
+    <h1 class="display-4 fw-bold text-primary mb-3" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">
+        BÃI XE THÔNG MINH
+    </h1>
+    <p class="lead text-light mb-4 fs-5">
+        Giải pháp quản lý, đặt chỗ và thanh toán tự động - An toàn, Tiện lợi, Nhanh chóng.
+    </p>
+
+    <div class="position-relative d-inline-block w-100 mb-5 shadow-lg rounded" style="max-width: 1000px; overflow: hidden; border: 2px solid #444;">
+
+        <img src="https://images.unsplash.com/photo-1506521781263-d8422e82f27a?q=80&w=2070&auto=format&fit=crop"
+             alt="Smart Parking"
+             class="img-fluid w-100"
+             style="height: 450px; object-fit: cover; opacity: 0.85; transition: opacity 0.3s;"
+             onmouseover="this.style.opacity='1'"
+             onmouseout="this.style.opacity='0.85'" />
+
+        <div class="position-absolute top-0 start-0 w-100 h-100" style="background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.6) 100%); pointer-events: none;"></div>
+    </div>
+
+    <div class="d-flex justify-content-center gap-4 flex-wrap">
+        <a asp-controller="Parking" asp-action="Booking" class="btn btn-warning btn-lg fw-bold shadow hover-effect" style="color: black !important; padding: 15px 30px; font-size: 1.2rem; border-radius: 10px;">
+            📱 ĐẶT CHỖ GỬI XE (KHÁCH)
+        </a>
+
+        <a asp-controller="Parking" asp-action="Index" class="btn btn-primary btn-lg fw-bold shadow hover-effect" style="padding: 15px 30px; font-size: 1.2rem; border-radius: 10px;">
+            🅿️ QUẢN LÝ BÃI XE (ADMIN)
+        </a>
+    </div>
+</div>
+
+<style>
+    /* Hiệu ứng phóng to nhẹ khi di chuột vào nút */
+    .hover-effect {
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+
+        .hover-effect:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.4) !important;
+        }
+</style>

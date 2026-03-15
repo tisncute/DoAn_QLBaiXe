@@ -1,0 +1,146 @@
+﻿@model IEnumerable<SmartParkingSystem.Models.ParkingSession>
+
+<div class="container mt-4">
+    <h2 class="text-primary">🅿️ Bãi Giữ Xe Thông Minh</h2>
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            ✅ @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    <hr />
+
+    <a asp-action="CheckIn" class="btn btn-success btn-lg mb-3">
+        + Xe Vào Bến
+    </a>
+    <div class="row mb-3 mt-2">
+        <div class="col-md-6">
+            <form asp-action="Index" method="get" class="d-flex gap-2">
+                <input type="text" name="searchString" class="form-control" placeholder="🔍 Nhập biển số xe..." />
+                <button type="submit" class="btn btn-primary">Tìm</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Hiện tất cả</a>
+            </form>
+        </div>
+    </div>
+    <table class="table table-bordered table-hover shadow-sm">
+        <thead class="table-dark">
+            <tr>
+                <th>Biển Số Xe</th>
+                <th>Loại Xe</th>
+                <th class="text-center">Vị Trí</th>
+                <th>Giờ Vào</th>
+                <th>Thời Gian Đã Gửi</th>
+                <th>Hành Động</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td class="fw-bold text-primary" style="font-size: 1.2rem;">
+                        <div>@item.LicensePlate</div>
+                        @if (item.IsBooked)
+                        {
+                            <span class="badge bg-warning mt-1" style="color: black !important; font-size: 0.9rem; font-weight: bold;">
+                                👤 Khách: @item.CustomerName
+                            </span>
+                            <br />
+                            @if (!string.IsNullOrEmpty(item.PhoneNumber))
+                            {
+                                <span class="badge bg-secondary mt-1 shadow-sm" style="font-size: 0.85rem; border: 1px solid #333;">
+                                    📞 SĐT: @item.PhoneNumber
+                                </span>
+                                <br />
+                            }
+                            @if (item.BookingTime != null)
+                            {
+                                <span class="badge bg-info mt-1 shadow-sm" style="color: black !important; font-size: 0.85rem; font-weight: bold; border: 1px solid #333;">
+                                    ⏰ Giờ hẹn: @item.BookingTime.Value.ToString("HH:mm - dd/MM/yyyy")
+                                </span>
+                            }
+                        }
+                    </td>
+
+                    <td>
+                        @if (item.VehicleType == "XeMay")
+                        {
+                            <span class="badge shadow-sm" style="background-color: #0d6efd; color: white !important; font-size: 14px; font-weight: bold; padding: 6px 10px;">🏍 Xe Máy</span>
+                        }
+                        else if (item.VehicleType == "OTo")
+                        {
+                            <span class="badge shadow-sm" style="background-color: #ffc107; color: black !important; font-size: 14px; font-weight: bold; padding: 6px 10px;">🚗 Ô Tô</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary shadow-sm">⚡ @item.VehicleType</span>
+                        }
+                    </td>
+
+                    <td class="text-center align-middle">
+                        <span class="badge shadow-sm" style="background-color: #ffc107; color: black !important; font-size: 15px; font-weight: bold; padding: 6px 12px; border: 1px solid #333;">
+                            @item.SpotName
+                        </span>
+                    </td>
+
+                    <td class="align-middle">
+                        @if (item.IsBooked)
+                        {
+                            <span class="text-muted fw-bold">📅 Đặt lúc:</span>
+                    
+                            <br />
+                            <span style="font-size: 0.9rem;">@item.CheckInTime.ToString("HH:mm - dd/MM/yyyy")</span>
+                            <div class="badge bg-warning mt-1 shadow-sm" style="color: black !important; font-size: 0.8rem; font-weight: bold;">Chưa nhận xe</div>
+                        }
+                        else
+                        {
+                            @item.CheckInTime.ToString("dddd, HH:mm:ss - dd/MM/yyyy", new System.Globalization.CultureInfo("vi-VN"))
+                        }
+                    </td>
+
+                    <td class="align-middle">
+                        @if (item.IsBooked)
+                        {
+                            <span class="text-muted fst-italic">Đang chờ khách...</span>
+                        }
+                        else
+                        {
+                            var timeSpan = DateTime.Now - item.CheckInTime;
+                            string timeDisplay = $"{(int)timeSpan.TotalHours} giờ {timeSpan.Minutes} phút";
+                            @timeDisplay
+                        }
+                    </td>
+
+                    <td class="text-center align-middle">
+                        @if (item.IsBooked)
+                        {
+                            <div class="d-flex flex-column gap-2">
+                                <form asp-action="ConfirmArrival" asp-route-id="@item.Id" method="post">
+                                    <button type="submit" class="btn btn-warning btn-sm w-100 shadow-sm" style="color: black !important; font-weight: bold;">
+                                        📥 Nhận Xe
+                                    </button>
+                                </form>
+                                <form asp-action="CancelBooking" asp-route-id="@item.Id" method="post" onsubmit="return confirm('Bạn có chắc chắn muốn hủy lịch đặt này không? Vị trí đỗ sẽ được làm trống.');">
+                                    <button type="submit" class="btn btn-danger btn-sm w-100 fw-bold shadow-sm">
+                                        ❌ Hủy Lịch
+                                    </button>
+                                </form>
+                            </div>
+                        }
+                        else
+                        {
+                            <a asp-action="CheckOut" asp-route-id="@item.Id" class="btn btn-danger btn-sm fw-bold shadow-sm">
+                                📤 Cho Xe Ra
+                            </a>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-warning text-center">Bãi xe đang trống!</div>
+    }
+</div>

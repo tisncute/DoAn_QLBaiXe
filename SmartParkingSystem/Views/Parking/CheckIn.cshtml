@@ -1,0 +1,237 @@
+﻿@model SmartParkingSystem.Models.ParkingSession
+
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h4>📝 Nhập Xe Vào Bến</h4>
+            </div>
+            <div class="card-body">
+
+                <div class="card mb-4 border-info bg-dark">
+                    <div class="card-header bg-info text-dark fw-bold text-center">
+                        🗺️ SƠ ĐỒ BÃI XE (A1 - A6)
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center g-2">
+                            @{
+                                // Lấy dữ liệu từ Controller gửi sang
+                                var activeCars = ViewBag.ActiveSessions as List<SmartParkingSystem.Models.ParkingSession> ?? new List<SmartParkingSystem.Models.ParkingSession>();
+                                int currentCount = ViewBag.CurrentCount ?? 0;
+                                string[] spotNames = { "A1", "A2", "A3", "A4", "A5", "A6" };
+
+                                // Vòng lặp vẽ 6 ô đỗ xe
+                                for (int i = 0; i < 6; i++)
+                                {
+                                    string currentSpot = spotNames[i];
+                                    // Tìm xem có xe nào đang nằm ở ô này không
+                                    var car = activeCars.FirstOrDefault(x => x.SpotName == currentSpot);
+
+                                    if (car != null)
+                                    {
+                                        if (car.IsBooked)
+                                        {
+                                            // Ô ĐÃ BỊ KHÁCH ĐẶT TRƯỚC (Màu Vàng)
+                                            <div class="col-4 col-md-2">
+                                                <div class="p-2 border border-warning rounded bg-warning shadow" style="border: 2px solid #333 !important;">
+                                                    <h5 class="mb-0" style="color: black !important; font-weight: bold !important;">@currentSpot</h5>
+                                                    <div class="fs-2">📱</div>
+                                                    <div class="mt-1 text-truncate" style="font-size: 0.8rem; color: black !important; font-weight: bold !important;">ĐẶT TRƯỚC</div>
+                                                    <div class="text-truncate" style="font-size: 0.8rem; color: black !important; font-weight: bold !important;">@car.LicensePlate</div>
+                                                </div>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            // 2. Ô ĐANG CÓ XE ĐỖ BÌNH THƯỜNG (Màu Đỏ)
+                                            <div class="col-4 col-md-2">
+                                                <div class="p-2 border border-danger rounded bg-danger text-white shadow">
+                                                    <h5 class="mb-0 fw-bold">@currentSpot</h5>
+                                                    <div class="fs-3">🚗</div>
+                                                    <div class="fw-bold mt-1 text-truncate" style="font-size: 0.75rem;">@car.LicensePlate</div>
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        // 3. Ô CÒN TRỐNG ĐỂ BẢO VỆ CHỌN (Màu Xanh)
+                                        <div class="col-4 col-md-2">
+                                            <div id="spot_@currentSpot"
+                                                 class="empty-spot p-2 border border-success rounded bg-success text-white opacity-75"
+                                                 style="cursor: pointer; transition: all 0.2s;"
+                                                 onclick="ChonViTri('@currentSpot')">
+                                                <h5 class="mb-0 fw-bold">@currentSpot</h5>
+                                                <div class="fs-3">🅿️</div>
+                                                <div class="mt-1 spot-text" style="font-size: 0.75rem;">Trống</div>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info text-center mb-4 border border-info">
+                    <h5 class="m-0 fw-bold text-dark">
+                        🕒 Giờ Hiện Tại: <span id="liveClockCheckIn" class="text-danger">Đang tải...</span>
+                    </h5>
+                </div>
+                <form asp-action="CheckIn">
+                    
+                    <div class="text-center mb-2" id="loiChonViTri">
+                        <span asp-validation-for="SpotName" class="text-danger fw-bold fs-5"></span>
+                    </div>
+
+                    <div class="alert alert-warning text-center p-2 mb-3 shadow-sm" id="boxChonViTri" style="display: none;">
+                        <h6 class="m-0 fw-bold text-dark">
+                            🎯 Vị trí đỗ xe: <span id="lblViTri" class="fs-4 text-danger">...</span>
+                        </h6>
+                        <input type="hidden" id="txtViTri" name="SpotName" value="" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Biển Số Xe</label>
+
+                        <div class="input-group">
+                            <input asp-for="LicensePlate"
+                                   id="txtBienSo"
+                                   class="form-control form-control-lg"
+                                   placeholder="Ví dụ: 59A-123.45"
+                                   required
+                                   oninvalid="this.setCustomValidity('Vui lòng nhập biển số')"
+                                   oninput="this.setCustomValidity('')" />
+
+                            <button type="button" class="btn btn-warning fw-bold" onclick="MoPhongCamera()">
+                                📸 Quét Camera
+                            </button>
+                        </div>
+                        <span asp-validation-for="LicensePlate" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Loại Xe</label>
+                        <select asp-for="VehicleType" id="VehicleType" class="form-select text-dark fw-bold">
+                            <option value="XeMay">🏍 Xe Máy</option>
+                            <option value="OTo">🚗 Ô Tô</option>
+                        </select>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        @if (ViewBag.CurrentCount >= ViewBag.MaxCapacity)
+                        {
+                            <div class="alert alert-danger text-center fw-bold">
+                                🚫 BÃI XE ĐÃ ĐẦY (6/6). HỆ THỐNG TẠM KHÓA!
+                            </div>
+                            <button type="button" class="btn btn-secondary btn-lg" disabled>Lưu Xe (Hết chỗ)</button>
+                        }
+                        else
+                        {
+                            <button type="submit" class="btn btn-primary btn-lg fw-bold">Lưu Xe Vào Bến</button>
+                        }
+                        <a asp-action="Index" class="btn btn-secondary">Quay lại</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+        function MoPhongCamera() {
+        // 1. Biển số mẫu
+        const bienSoOTo = [
+            "59A-123.45", "30E-999.99", "43A-567.89", "65A-234.56",
+            "15A-987.65", "51K-555.55", "99A-999.99", "61A-456.78",
+            "30F-686.86", "79A-797.97", "36A-333.33", "29A-567.89",
+            "TESLA-X-2026", "VINFAST-VF8"
+        ];
+
+        const bienSoXeMay = [
+            "29-P1 112.23", "65-H1 456.78", "51-G1 888.88", "43-C1 111.11",
+            "15-B2 987.65", "30-M3 555.55", "61-G1 456.78", "72-F1 888.88",
+            "37-B1 123.89", "59-S2 333.33", "99-F1 999.99", "88-K1 888.88"
+        ];
+
+        // 2. Chọn ngẫu nhiên loại xe
+        const laOTo = Math.random() < 0.5;
+
+        // 3. Bốc biển số tương ứng với loại xe
+        let randomBienSo = "";
+        const loaiXeSelect = document.querySelector("select[name='VehicleType']");
+
+        if (laOTo) {
+            randomBienSo = bienSoOTo[Math.floor(Math.random() * bienSoOTo.length)];
+            loaiXeSelect.value = "OTo";
+        } else {
+            randomBienSo = bienSoXeMay[Math.floor(Math.random() * bienSoXeMay.length)];
+            loaiXeSelect.value = "XeMay";
+        }
+
+        // 4. Điền vào ô input và xóa lỗi (nếu có)
+        var txtInput = document.getElementById("txtBienSo");
+        if (txtInput) {
+            // Tạo hiệu ứng nháy nháy nhẹ cho giống AI đang quét
+            txtInput.value = "Đang quét AI...";
+            setTimeout(() => {
+                txtInput.value = randomBienSo;
+                txtInput.setCustomValidity('');
+                txtInput.readOnly = false;
+                txtInput.style.backgroundColor = "";
+                txtInput.style.color = "";
+            }, 500);
+        }
+    }
+
+    function updateLiveClock() {
+        const now = new Date();
+
+        const days = ["Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"];
+        const dayOfWeek = days[now.getDay()];
+
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const year = now.getFullYear();
+
+        const timeString = `${dayOfWeek}, ${hours}:${minutes}:${seconds} - ${day}/${month}/${year}`;
+
+        const clockElement = document.getElementById("liveClockCheckIn");
+        if(clockElement) {
+            clockElement.innerText = timeString;
+        }
+    }
+
+    setInterval(updateLiveClock, 1000);
+    updateLiveClock();
+
+    function ChonViTri(spotName) {
+        const allEmptySpots = document.querySelectorAll('.empty-spot');
+        allEmptySpots.forEach(spot => {
+            spot.classList.remove('bg-warning', 'text-dark', 'opacity-100', 'border-warning');
+            spot.classList.add('bg-success', 'text-white', 'opacity-75', 'border-success');
+            spot.querySelector('.spot-text').innerText = "Trống";
+
+            spot.querySelector('h5').style.setProperty('color', 'white', 'important');
+            spot.querySelector('.spot-text').style.setProperty('color', 'white', 'important');
+        });
+
+        const clickedSpot = document.getElementById('spot_' + spotName);
+        clickedSpot.classList.remove('bg-success', 'text-white', 'opacity-75', 'border-success');
+        clickedSpot.classList.add('bg-warning', 'text-dark', 'opacity-100', 'border-warning');
+        clickedSpot.querySelector('.spot-text').innerText = "Đang chọn";
+
+        clickedSpot.querySelector('h5').style.setProperty('color', 'black', 'important');
+        clickedSpot.querySelector('.spot-text').style.setProperty('color', 'black', 'important');
+
+        document.getElementById('boxChonViTri').style.display = 'block';
+        document.getElementById('lblViTri').innerText = spotName;
+        document.getElementById('txtViTri').value = spotName;
+
+        var loiBox = document.getElementById('loiChonViTri');
+        if(loiBox) { loiBox.style.display = 'none'; }
+    }
+</script>

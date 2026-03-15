@@ -1,0 +1,134 @@
+﻿@model SmartParkingSystem.Models.ParkingSession
+
+<div class="container mt-5 text-center">
+    <div class="card shadow-lg mx-auto" style="max-width: 600px;">
+        <div class="card-header bg-danger text-white">
+            <h3>💰 Xác Nhận Thanh Toán</h3>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info text-center mb-3 border border-info">
+                <h5 class="m-0 fw-bold text-dark">
+                    🕒 Thời Gian Hiện Tại: <span id="liveClockCheckOut" class="text-danger">Đang tải...</span>
+                </h5>
+            </div>
+           
+            <div class="alert alert-secondary text-start">
+                <h6>Dữ liệu lúc vào (Trong thẻ từ):</h6>
+
+                <p><strong>Biển số gốc:</strong> <span class="text-primary fw-bold" id="bienSoGoc">@Model.LicensePlate</span></p>
+
+                <p>
+                    <strong>Vị trí đỗ:</strong>
+                    <span class="badge shadow-sm" style="background-color: #ffc107; color: black !important; font-size: 15px; font-weight: bold; padding: 5px 12px; border: 1px solid #111;">
+                        @(string.IsNullOrEmpty(Model.SpotName) ? "Chưa có" : Model.SpotName)
+                    </span>
+                </p>
+                <p>
+                    <strong>Giờ vào:</strong>
+                    @Model.CheckInTime.ToString("dddd, HH:mm:ss dd/MM/yyyy", new System.Globalization.CultureInfo("vi-VN"))
+                </p>
+            </div>
+
+            <hr />
+
+            <form asp-action="ConfirmCheckOut" method="post" class="text-start">
+                <input type="hidden" name="id" value="@Model.Id" />
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-danger">📸 Camera Cổng Ra Đang Quét:</label>
+                    <div class="input-group">
+
+                        <input type="text"
+                               name="plateOut"
+                               id="txtPlateOut"
+                               class="form-control fw-bold"
+                               placeholder="Đang chờ quét..."
+                               required
+                               oninvalid="this.setCustomValidity('Vui lòng nhập vào')"
+                               oninput="this.setCustomValidity('')" />
+
+                        <button type="button" class="btn btn-success" onclick="GiaLapKhop()">✅ Đúng</button>
+                        <button type="button" class="btn btn-warning" onclick="GiaLapGianLan()">⚠️ Sai</button>
+                    </div>
+                </div>
+
+                <div class="text-center mt-4">
+                    <h2 class="text-success fw-bold mb-4">@Model.ParkingFee.ToString("N0") đ</h2>
+
+                    @if (Model.ParkingFee > 0)
+                    {
+                        <div class="mb-4 p-3 border border-2 rounded bg-light mx-auto shadow-sm" style="max-width: 320px; border-color: #a50064 !important;">
+                            <h5 class="fw-bold mb-3" style="color: #a50064;">📱 Quét MoMo thanh toán</h5>
+
+                            <img src="https://img.vietqr.io/image/MOMO-0762841300-compact2.png?amount=@Model.ParkingFee&addInfo=Giu xe @Model.LicensePlate&accountName=LE DUONG HUYNH TIN"
+                                 alt="QR MoMo"
+                                 class="img-fluid rounded shadow"
+                                 style="width: 220px; height: 220px; object-fit: contain; border: 1px solid #ddd;" />
+
+                            <div class="mt-3 text-dark fw-bold" style="font-size: 1rem;">
+                                Ví điện tử: <span style="color: #a50064;">MoMo</span> <br />
+                                SĐT: <span style="color: #a50064;">0762841300</span> <br />
+                                Chủ TK: <span style="color: #a50064;">LE DUONG HUYNH TIN</span>
+                            </div>
+                        </div>
+                    }
+
+                    <button type="submit" class="btn btn-primary btn-lg w-100 shadow-sm" style="font-size: 1.2rem;">
+                        Kiểm Tra & Mở Barrier
+                    </button>
+
+                    <a asp-action="Index" class="btn btn-secondary btn-lg w-100 mt-2 shadow-sm">
+                        Quay lại trang chủ
+                    </a>
+                </div>
+            </form>
+
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger mt-3 fw-bold animate__animated animate__flash">
+                    🚨 CẢNH BÁO: @TempData["Error"]
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+    // Xe chính chủ -> Camera quét ra biển số Y HỆT biển số gốc
+    function GiaLapKhop() {
+        var bienGoc = document.getElementById("bienSoGoc").innerText;
+        var txtInput = document.getElementById("txtPlateOut");
+
+        txtInput.value = bienGoc;
+        txtInput.style.backgroundColor = "#d4edda";
+        txtInput.setCustomValidity('');
+    }
+
+    // Trộm xe -> Camera quét ra biển số KHÁC
+    function GiaLapGianLan() {
+        var txtInput = document.getElementById("txtPlateOut");
+
+        txtInput.value = "99Z-999.99 (BIỂN GIẢ)";
+        txtInput.style.backgroundColor = "#f8d7da";
+        txtInput.setCustomValidity('');
+    }
+    function updateLiveClock() {
+              const now = new Date();
+              const hours = String(now.getHours()).padStart(2, '0');
+              const minutes = String(now.getMinutes()).padStart(2, '0');
+              const seconds = String(now.getSeconds()).padStart(2, '0');
+              const day = String(now.getDate()).padStart(2, '0');
+              const month = String(now.getMonth() + 1).padStart(2, '0');
+              const year = now.getFullYear();
+
+              const timeString = `${hours}:${minutes}:${seconds} - ${day}/${month}/${year}`;
+
+              const clockElement = document.getElementById("liveClockCheckOut");
+              if(clockElement) {
+                  clockElement.innerText = timeString;
+              }
+          }
+
+          setInterval(updateLiveClock, 1000);
+          updateLiveClock();
+</script>

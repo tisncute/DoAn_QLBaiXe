@@ -1,0 +1,174 @@
+﻿@model SmartParkingSystem.Models.ParkingSession
+@{
+    ViewData["Title"] = "Khách Hàng - Đặt Chỗ Trước";
+    Layout = "_Layout"; // Vẫn dùng layout chung nhưng bạn có thể tạo layout riêng cho khách sau
+}
+
+<div class="row justify-content-center mt-4">
+    <div class="col-md-8">
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success fs-5 fw-bold text-center">
+                ✅ @TempData["SuccessMessage"]
+            </div>
+        }
+
+        <div class="card shadow border-primary bg-dark">
+            <div class="card-header bg-primary text-white text-center py-3">
+                <h3 class="mb-0 fw-bold">📱 ĐẶT CHỖ GỬI XE TRỰC TUYẾN</h3>
+            </div>
+            <div class="card-body">
+
+                <div class="card mb-4 border-info bg-dark">
+                    <div class="card-header bg-info text-dark fw-bold text-center">
+                        🗺️ CHỌN VỊ TRÍ BẠN MUỐN ĐẶT (A1 - A6)
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center g-2">
+                            @{
+                                var activeCars = ViewBag.ActiveSessions as List<SmartParkingSystem.Models.ParkingSession> ?? new List<SmartParkingSystem.Models.ParkingSession>();
+                                string[] spotNames = { "A1", "A2", "A3", "A4", "A5", "A6" };
+
+                                for (int i = 0; i < 6; i++)
+                                {
+                                    string currentSpot = spotNames[i];
+                                    var car = activeCars.FirstOrDefault(x => x.SpotName == currentSpot);
+
+                                    if (car != null)
+                                    {
+                                        // Ô ĐÃ CÓ NGƯỜI (Màu Đỏ hoặc Cam)
+                                        <div class="col-4 col-md-2">
+                                            <div class="p-2 border border-secondary rounded bg-secondary text-white opacity-75">
+                                                <h5 class="mb-0 fw-bold">@currentSpot</h5>
+                                                <div class="fs-3">🔒</div>
+                                                <div class="mt-1" style="font-size: 0.75rem;">Đã có người</div>
+                                            </div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        // Ô TRỐNG ĐỂ KHÁCH CHỌN
+                                        <div class="col-4 col-md-2">
+                                            <div id="spot_@currentSpot"
+                                                 class="empty-spot p-2 border border-success rounded bg-success text-white"
+                                                 style="cursor: pointer; transition: all 0.2s;"
+                                                 onclick="ChonViTriKhach('@currentSpot')">
+                                                <h5 class="mb-0 fw-bold">@currentSpot</h5>
+                                                <div class="fs-3">🅿️</div>
+                                                <div class="mt-1 spot-text" style="font-size: 0.75rem;">Còn trống</div>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <form asp-action="Booking" method="post">
+
+                    <div class="text-center mb-2" id="loiChonViTri">
+                        <span asp-validation-for="SpotName" class="text-danger fw-bold fs-5"></span>
+                        <span asp-validation-for="CustomerName" class="text-danger fw-bold fs-5 d-block"></span>
+                    </div>
+
+                    <div class="alert alert-warning text-center p-2 mb-3 shadow-sm" id="boxChonViTri" style="display: none;">
+                        <h6 class="m-0 fw-bold text-dark">
+                            🎯 Vị trí bạn chọn: <span id="lblViTri" class="fs-4 text-danger">...</span>
+                        </h6>
+                        <input type="hidden" id="txtViTri" name="SpotName" value="" />
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">👤 Họ và Tên</label>
+                            <input asp-for="CustomerName" class="form-control" placeholder="Nhập tên của bạn" required
+                                      oninvalid="this.setCustomValidity('Vui lòng nhập họ tên')"
+                                      oninput="this.setCustomValidity('')" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">📞 Số Điện Thoại</label>
+                            <input type="tel" asp-for="PhoneNumber" class="form-control text-dark" placeholder="Nhập SĐT của bạn" required
+                                   oninvalid="this.setCustomValidity('Vui lòng nhập số điện thoại')"
+                                   oninput="this.setCustomValidity('')" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">🚗 Biển Số Xe</label>
+                            <input asp-for="LicensePlate" class="form-control" placeholder="VD: 59A-123.45" required
+                                      oninvalid="this.setCustomValidity('Vui lòng nhập biển số xe')"
+                                      oninput="this.setCustomValidity('')" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Loại Xe</label>
+                            <select name="vehicleType" class="form-select text-dark fw-bold">
+                                <option value="">-- Tất cả --</option>
+                                <option value="XeMay">🏍 Xe Máy</option>
+                                <option value="OTo">🚗 Ô Tô</option>
+B                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row mt-3 mb-4">
+                        <div class="col-12">
+                            <label class="form-label fw-bold">⏰ Giờ dự kiến đưa xe đến bãi</label>
+                            <input type="datetime-local" asp-for="BookingTime" id="BookingTime" class="form-control text-dark fw-bold" required
+                                   oninvalid="this.setCustomValidity('Vui lòng chọn ngày giờ bạn sẽ đến')"
+                                   oninput="this.setCustomValidity('')" />
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4 mb-2">
+                        <button type="submit" class="btn btn-warning btn-lg fw-bold shadow" style="color: black !important; font-size: 1.3rem; padding: 14px; border: 2px solid #222 !important;">
+                            XÁC NHẬN ĐẶT CHỖ
+                        </button>
+                    </div>
+                </form> <div class="mt-4 p-3 rounded shadow-sm" style="background-color: #1e1e1e; border-left: 4px solid #ffc107;">
+                    <h6 class="fw-bold text-warning mb-1">📞 Hỗ trợ khách hàng</h6>
+                    <p class="text-light mb-0" style="font-size: 0.95rem;">
+                        Trường hợp quý khách muốn thay đổi giờ đến hoặc <strong>hủy lịch đặt chỗ</strong>, vui lòng liên hệ Ban Quản Lý bãi xe qua Hotline:
+                        <a href="tel:0762841300" class="text-warning fw-bold fs-5 text-decoration-none ms-1">
+                            0762 841 300
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    function ChonViTriKhach(spotName) {
+        const allEmptySpots = document.querySelectorAll('.empty-spot');
+        allEmptySpots.forEach(spot => {
+            spot.classList.remove('bg-warning', 'text-dark', 'border-warning');
+            spot.classList.add('bg-success', 'text-white', 'border-success');
+            spot.querySelector('.spot-text').innerText = "Còn trống";
+
+            spot.querySelector('h5').style.setProperty('color', 'white', 'important');
+            spot.querySelector('.spot-text').style.setProperty('color', 'white', 'important');
+        });
+
+        const clickedSpot = document.getElementById('spot_' + spotName);
+        clickedSpot.classList.remove('bg-success', 'text-white', 'border-success');
+        clickedSpot.classList.add('bg-warning', 'text-dark', 'border-warning');
+        clickedSpot.querySelector('.spot-text').innerText = "Đang chọn";
+
+        clickedSpot.querySelector('h5').style.setProperty('color', 'black', 'important');
+        clickedSpot.querySelector('.spot-text').style.setProperty('color', 'black', 'important');
+
+        document.getElementById('boxChonViTri').style.display = 'block';
+        document.getElementById('lblViTri').innerText = spotName;
+        document.getElementById('txtViTri').value = spotName;
+
+        var loiBox = document.getElementById('loiChonViTri');
+        if(loiBox) loiBox.style.display = 'none';
+    }
+    document.addEventListener("DOMContentLoaded", function() {
+        var tzoffset = (new Date()).getTimezoneOffset() * 60000;
+        var localISOTime = (new Date(Date.now() - tzoffset)).toISOString().slice(0, 16);
+        document.getElementById("BookingTime").setAttribute("min", localISOTime);
+    });
+</script>
